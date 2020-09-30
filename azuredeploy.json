@@ -9,7 +9,7 @@
         },
         "siteLocation": {
             "type": "string",
-            "defaultValue": "North Central US"
+            "defaultValue": "Australia East"
         },
         "siteName": {
             "type": "string",
@@ -34,7 +34,7 @@
             "type": "string"
         },
         "repoUrl": {
-            "defaultValue": "https://github.com/vanderby/SonarQube-AzureAppService",
+            "defaultValue": "https://github.com/sidm1983/SonarQube-AzureAppService",
             "type": "string"
         },
         "branch": {
@@ -57,10 +57,29 @@
             "metadata": {
                 "description": "Specific version of SQ to download e.g. 7.9.1 or 8.0. Leave blank or set to 'Latest' for most recent version."
             }
+        },
+        "JDBC Url": {
+            "type": "string",
+            "defaultValue": "jdbc:sqlserver://<sql-server-name>.database.windows.net:1433;database=<db-name>;encrypt=true;",
+            "metadata": {
+                "description": "The JDBC database URL without credentials."
+            }
+        },
+        "DB Server Username": {
+            "type": "string",
+            "metadata": {
+                "description": "The database username."
+            }
+        },
+        "DB Server Password": {
+            "type": "securestring",
+            "metadata": {
+                "description": "The database password."
+            }
         }
     },
     "variables": {
-        "deploymentTelemetryKey": "e15aa4db-a1cc-4622-844f-e7dd01596983"
+        "deploymentTelemetryKey": "a3d0ca09-6bbc-40f3-a913-f8a5abbc6f42"
     },
     "resources": [
         {
@@ -113,7 +132,10 @@
                     "properties": {
                         "Deployment_Telemetry_Instrumentation_Key": "[variables('deploymentTelemetryKey')]",
                         "SonarQubeEdition": "[parameters('SonarQube Edition')]",
-                        "SonarQubeVersion": "[parameters('SonarQube Version')]"
+                        "SonarQubeVersion": "[parameters('SonarQube Version')]",
+                        "sonar.jdbc.url": "[parameters('JDBC Url')]",
+                        "sonar.jdbc.username": "[parameters('DB Server Username')]",
+                        "sonar.jdbc.password": "[parameters('DB Server Password')]"
                     }
                 },
                 {
