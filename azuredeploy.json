@@ -2,20 +2,18 @@
     "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
     "contentVersion": "1.0.0.0",
     "parameters": {
-        "hostingPlanName": {
+        "instanceName": {
             "type": "string",
-            "minLength": 1,
-            "defaultValue": "SonarQubeAppServicePlan"
+            "defaultValue": "[concat('sonarqube-', uniqueString(resourceGroup().id))]",
+            "metadata": {
+                "description": "The name of this instance of Sonarqube. Note: This name will be used to derive the names of all related Azure resources being provisioned."
+            }
         },
         "siteLocation": {
             "type": "string",
             "defaultValue": "Australia East"
         },
-        "siteName": {
-            "type": "string",
-            "defaultValue": "SonarQubeAppService"
-        },
-        "skuName": {
+        "appServiceSkuName": {
             "defaultValue": "B1",
             "allowedValues": [
                 "B1",
@@ -41,7 +39,7 @@
             "defaultValue": "master",
             "type": "string"
         },
-        "SonarQube Edition": {
+        "sonarQubeEdition": {
             "type": "string",
             "defaultValue": "Community",
             "allowedValues": [
@@ -51,60 +49,103 @@
                 "Data Center"
             ]
         },
-        "SonarQube Version": {
+        "sonarQubeVersion": {
             "type": "string",
             "defaultValue": "Latest",
             "metadata": {
                 "description": "Specific version of SQ to download e.g. 7.9.1 or 8.0. Leave blank or set to 'Latest' for most recent version."
             }
         },
-        "JDBC Url": {
-            "type": "string",
-            "defaultValue": "jdbc:sqlserver://<sql-server-name>.database.windows.net:1433;database=<db-name>;encrypt=true;",
-            "metadata": {
-                "description": "The JDBC database URL without credentials."
-            }
-        },
-        "DB Server Username": {
+        "sqlServerUsername": {
             "type": "string",
             "metadata": {
                 "description": "The database username."
             }
         },
-        "DB Server Password": {
+        "sqlServerPassword": {
             "type": "securestring",
             "metadata": {
                 "description": "The database password."
             }
+        },
+        "dbSkuName": {
+            "defaultValue": "S1",
+            "type": "string"
         }
     },
     "variables": {
-        "deploymentTelemetryKey": "a3d0ca09-6bbc-40f3-a913-f8a5abbc6f42"
+        "deploymentTelemetryKey": "a3d0ca09-6bbc-40f3-a913-f8a5abbc6f42",
+        "appServicePlanName": "[concat('plan-', parameters('instanceName'))]",
+        "appServiceName": "[concat('app-', parameters('instanceName'))]",
+        "sqlServerName": "[concat('sql-', parameters('instanceName'))]",
+        "databaseName": "[concat('db-', parameters('instanceName'))]"
     },
     "resources": [
         {
+            "apiVersion": "2015-05-01-preview",
+            "type": "Microsoft.Sql/servers",
+            "location": "[parameters('siteLocation')]",
+            "name": "[variables('sqlServerName')]",
+            "properties": {
+                "administratorLogin": "[parameters('sqlServerUsername')]",
+                "administratorLoginPassword": "[parameters('sqlServerUsername')]",
+                "version": "12.0"
+            },
+            "resources": [
+                {
+                    "apiVersion": "2018-06-01-preview",
+                    "type": "databases",
+                    "dependsOn": [
+                        "[concat('Microsoft.Sql/servers/', variables('sqlServerName'))]"
+                    ],
+                    "location": "[parameters('siteLocation')]",
+                    "name": "[variables('databaseName')]",
+                    "properties": {
+                        "collation": "SQL_Latin1_General_CP1_CS_AS"
+                    },
+                    "sku": {
+                        "name": "[parameters('dbSkuName')]"
+                    }
+                },
+                {
+                    "apiVersion": "2014-04-01-preview",
+                    "dependsOn": [
+                        "[concat('Microsoft.Sql/servers/', variables('sqlServerName'))]"
+                    ],
+                    "location": "[parameters('siteLocation')]",
+                    "name": "AllowAllWindowsAzureIps",
+                    "properties": {
+                        "endIpAddress": "0.0.0.0",
+                        "startIpAddress": "0.0.0.0"
+                    },
+                    "type": "firewallrules"
+                }
+            ]
+        },
+        {
             "apiVersion": "2016-09-01",
-            "name": "[parameters('hostingPlanName')]",
+            "name": "[variables('appServicePlanName')]",
             "type": "Microsoft.Web/serverfarms",
             "location": "[parameters('siteLocation')]",
             "sku": {
-                "name": "[parameters('skuName')]"
+                "name": "[parameters('appServiceSkuName')]"
             },
             "properties": {
-                "name": "[parameters('hostingPlanName')]"
+                "name": "[variables('appServicePlanName')]"
             }
         },
         {
             "apiVersion": "2016-08-01",
-            "name": "[parameters('siteName')]",
+            "name": "[variables('appServiceName')]",
             "type": "Microsoft.Web/sites",
             "location": "[parameters('siteLocation')]",
             "dependsOn": [
-                "[resourceId('Microsoft.Web/serverfarms/', parameters('hostingPlanName'))]"
+                "[resourceId('Microsoft.Web/serverfarms/', variables('appServicePlanName'))]",
+                "[resourceId('Microsoft.Sql/servers/', variables('sqlServerName'))]"
             ],
             "properties": {
-                "name": "[parameters('siteName')]",
-                "serverFarmId": "[resourceId('Microsoft.Web/serverfarms', parameters('hostingPlanName'))]",
+                "name": "[variables('appServiceName')]",
+                "serverFarmId": "[resourceId('Microsoft.Web/serverfarms', variables('appServicePlanName'))]",
                 "clientAffinityEnabled": false
             },
             "resources": [
@@ -113,7 +154,7 @@
                     "type": "config",
                     "apiVersion": "2016-08-01",
                     "dependsOn": [
-                        "[resourceId('Microsoft.Web/sites', parameters('siteName'))]"
+                        "[resourceId('Microsoft.Web/sites', variables('appServiceName'))]"
                     ],
                     "properties": {
                         "alwaysOn": false,
@@ -127,15 +168,15 @@
                     "type": "config",
                     "apiVersion": "2016-08-01",
                     "dependsOn": [
-                        "[resourceId('Microsoft.Web/sites', parameters('siteName'))]"
+                        "[resourceId('Microsoft.Web/sites', variables('appServiceName'))]"
                     ],
                     "properties": {
                         "Deployment_Telemetry_Instrumentation_Key": "[variables('deploymentTelemetryKey')]",
-                        "SonarQubeEdition": "[parameters('SonarQube Edition')]",
-                        "SonarQubeVersion": "[parameters('SonarQube Version')]",
-                        "sonar.jdbc.url": "[parameters('JDBC Url')]",
-                        "sonar.jdbc.username": "[parameters('DB Server Username')]",
-                        "sonar.jdbc.password": "[parameters('DB Server Password')]"
+                        "SonarQubeEdition": "[parameters('sonarQubeEdition')]",
+                        "SonarQubeVersion": "[parameters('sonarQubeVersion')]",
+                        "sonar.jdbc.url": "[concat('jdbc:sqlserver://', reference(resourceId('Microsoft.Sql/servers', variables('sqlServerName'))).fullyQualifiedDomainName, ':1433;database=', variables('databaseName'), ';encrypt=true;')]",
+                        "sonar.jdbc.username": "[parameters('sqlServerUsername')]",
+                        "sonar.jdbc.password": "[parameters('sqlServerPassword')]"
                     }
                 },
                 {
@@ -143,8 +184,8 @@
                     "name": "web",
                     "type": "sourcecontrols",
                     "dependsOn": [
-                        "[resourceId('Microsoft.Web/Sites', parameters('siteName'))]",
-                        "[concat('Microsoft.Web/Sites/', parameters('siteName'), '/config/web')]"
+                        "[resourceId('Microsoft.Web/Sites', variables('appServiceName'))]",
+                        "[concat('Microsoft.Web/Sites/', variables('appServiceName'), '/config/web')]"
                     ],
                     "properties": {
                         "RepoUrl": "[parameters('repoUrl')]",
