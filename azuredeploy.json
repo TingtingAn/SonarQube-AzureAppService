@@ -12,7 +12,7 @@
         },
         "siteLocation": {
             "type": "string",
-            "defaultValue": "Australia East"
+            "defaultValue": "[resourceGroup().location]"
         },
         "appServiceSkuName": {
             "defaultValue": "B1",
