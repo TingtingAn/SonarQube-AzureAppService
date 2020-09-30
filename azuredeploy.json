@@ -90,7 +90,7 @@
             "name": "[variables('sqlServerName')]",
             "properties": {
                 "administratorLogin": "[parameters('sqlServerUsername')]",
-                "administratorLoginPassword": "[parameters('sqlServerUsername')]",
+                "administratorLoginPassword": "[parameters('sqlServerPassword')]",
                 "version": "12.0"
             },
             "resources": [
