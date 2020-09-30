@@ -4,7 +4,8 @@
     "parameters": {
         "instanceName": {
             "type": "string",
-            "defaultValue": "[concat('sonarqube-', uniqueString(resourceGroup().id))]",
+            "minLength": 1,
+            "defaultValue": "sonarqube",
             "metadata": {
                 "description": "The name of this instance of Sonarqube. Note: This name will be used to derive the names of all related Azure resources being provisioned."
             }
@@ -75,10 +76,11 @@
     },
     "variables": {
         "deploymentTelemetryKey": "a3d0ca09-6bbc-40f3-a913-f8a5abbc6f42",
-        "appServicePlanName": "[concat('plan-', parameters('instanceName'))]",
-        "appServiceName": "[concat('app-', parameters('instanceName'))]",
-        "sqlServerName": "[concat('sql-', parameters('instanceName'))]",
-        "databaseName": "[concat('db-', parameters('instanceName'))]"
+        "uniqueString": "[concat('-', uniqueString(subscription().subscriptionId))]",
+        "appServicePlanName": "[concat('plan-', parameters('instanceName'), variables('uniqueString'))]",
+        "appServiceName": "[concat('app-', parameters('instanceName'), variables('uniqueString'))]",
+        "sqlServerName": "[concat('sql-', parameters('instanceName'), variables('uniqueString'))]",
+        "databaseName": "[concat('db-', parameters('instanceName'), variables('uniqueString'))]"
     },
     "resources": [
         {
