@@ -12,7 +12,7 @@
         },
         "siteLocation": {
             "type": "string",
-            "defaultValue": "[resourceGroup().location]"
+            "defaultValue": "Australia East"
         },
         "appServiceSkuName": {
             "defaultValue": "B1",
@@ -40,7 +40,7 @@
             "defaultValue": "master",
             "type": "string"
         },
-        "sonarQubeEdition": {
+        "sonarqubeEdition": {
             "type": "string",
             "defaultValue": "Community",
             "allowedValues": [
@@ -50,7 +50,7 @@
                 "Data Center"
             ]
         },
-        "sonarQubeVersion": {
+        "sonarqubeVersion": {
             "type": "string",
             "defaultValue": "Latest",
             "metadata": {
@@ -174,8 +174,8 @@
                     ],
                     "properties": {
                         "Deployment_Telemetry_Instrumentation_Key": "[variables('deploymentTelemetryKey')]",
-                        "SonarQubeEdition": "[parameters('sonarQubeEdition')]",
-                        "SonarQubeVersion": "[parameters('sonarQubeVersion')]",
+                        "SonarQubeEdition": "[parameters('sonarqubeEdition')]",
+                        "SonarQubeVersion": "[parameters('sonarqubeVersion')]",
                         "sonar.jdbc.url": "[concat('jdbc:sqlserver://', reference(resourceId('Microsoft.Sql/servers', variables('sqlServerName'))).fullyQualifiedDomainName, ':1433;database=', variables('databaseName'), ';encrypt=true;')]",
                         "sonar.jdbc.username": "[parameters('sqlServerUsername')]",
                         "sonar.jdbc.password": "[parameters('sqlServerPassword')]"
